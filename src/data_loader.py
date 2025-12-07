@@ -1,10 +1,61 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-def load_csv(filepath = 'data/price.csv'):
-    #loads a csv with a date column and returns with the dataframe.
-    df = pd.read_csv(filepath, parse_dates=['date'])
-    df = df.set_index('date').sort_index()
+##to avoid the sheer fact that i have to update data and downlad file and which would cost me live data not being available so i am implementing a yfinance function
+
+import yfinance as yf
+from datetime import datetime, timedelta
+
+def load_from_yahoo(ticker='SPY', period='1y', interval='1d'):
+    print(f"loading data for {ticker} from yahoo finance")
+    
+    df = yf.download(ticker, period=period, interval=interval, progress=False)
+    
+    if df.empty:
+        raise ValueError(f"No data found for ticker {ticker}")
+    
+    # If multi-index (Yahoo often returns this)
+    if isinstance(df.columns, pd.MultiIndex):
+        df = df['Close'].to_frame()   # get Close only
+        df.columns = ['Close']        # flatten column name
+    else:
+        df = df[['Close']]
+    
+    df = df.sort_index()
+    print(f"Dowloaded {len(df)} rows of data for {ticker}")
+    
+    return df
+ #cus we arent just doing it to spy are we that is i thought of implementing multi assets so it would be able to generate reports for many at the same time i guess
+def load_multiple_assets(tickers, period='1y', interval='1d'):
+    print(f"Fetching data for {len(tickers)} assets...")
+
+    df = yf.download(tickers, period=period, interval=interval, progress=False)
+
+    if len(tickers) == 1:
+        # Single ticker: flatten
+        df = df['Close'].to_frame()
+        df.columns = [tickers[0]]
+    else:
+        df = df['Close']     # extract only Close
+        df.columns = df.columns.droplevel(0)  # remove outer level ("Close")
+
+    df = df.sort_index()
+
+    print(f"Downloaded {len(df)} data points for {tickers}")
+    return df
+
+def load_csv(filepath='data/price.csv'):#to check if it returned empty
+    """Loads a CSV with a date column and returns the dataframe."""
+    df = pd.read_csv(filepath, parse_dates=['Date'])  # Capital D
+    df = df.set_index('Date').sort_index()
+    
+    
+    if 'Close/Last' in df.columns:
+        df = df.rename(columns={'Close/Last': 'Close'})
+    
+    # Keep only the Close price for now
+    df = df[['Close']]
+    
     return df
 
 def filling_missing_dates(df):
@@ -69,3 +120,4 @@ def plots_path(sims, assets_index = 0, filename = "simulations_paths.png"):
     plt.grid(True)
     plt.savefig(filename, dpi=300)
     plt.close()
+    print(f"    ✓ Plot saved to {filename}")

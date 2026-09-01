@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Black Swan — Portfolio Risk Engine</title>
+  <meta name="description" content="Monte Carlo portfolio risk analysis powered by Black Swan.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="noise"></div>
+  <header class="topbar">
+    <a class="brand" href="#">
+      <span class="brand-mark">BS</span>
+      <span>BLACK SWAN</span>
+      <small>MONTE CARLO RISK ENGINE</small>
+    </a>
+    <div class="status">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">ENGINE READY</span>
+      <span class="version">v0.1.0</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow">PORTFOLIO RISK / STOCHASTIC SIMULATION</p>
+        <h1>See the range of<br><em>possible futures.</em></h1>
+        <p class="hero-copy">
+          Configure a portfolio, pull historical market data, and run a correlated
+          Gaussian Monte Carlo simulation to explore portfolio outcomes and tail risk.
+        </p>
+      </div>
+      <div class="hero-stat">
+        <span>MODEL</span>
+        <strong>GBM</strong>
+        <small>correlated log-return process</small>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <aside class="panel controls">
+        <div class="panel-heading">
+          <span>01</span>
+          <h2>Simulation setup</h2>
+        </div>
+
+        <label>Assets</label>
+        <div id="assetRows" class="asset-list"></div>
+        <button class="ghost-button" id="addAsset">+ Add asset</button>
+        <p class="hint">2–10 assets · weights must total 100%</p>
+
+        <div class="form-grid">
+          <div>
+            <label for="initialValue">Initial value</label>
+            <div class="input-wrap"><span>£</span><input id="initialValue" type="number" min="1" step="1000" value="100000"></div>
+          </div>
+          <div>
+            <label for="simulations">Simulations</label>
+            <input id="simulations" type="number" min="100" max="100000" step="100" value="10000">
+          </div>
+          <div>
+            <label for="horizon">Horizon</label>
+            <div class="input-wrap"><input id="horizon" type="number" min="1" max="5000" value="252"><span>days</span></div>
+          </div>
+          <div>
+            <label for="seed">Seed</label>
+            <input id="seed" type="number" value="42">
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div>
+            <label for="period">Historical data</label>
+            <select id="period">
+              <option value="1y">1 year</option>
+              <option value="2y">2 years</option>
+              <option value="5y" selected>5 years</option>
+              <option value="10y">10 years</option>
+              <option value="max">Max</option>
+            </select>
+          </div>
+          <div>
+            <label for="confidence">Confidence</label>
+            <select id="confidence">
+              <option value="0.9">90%</option>
+              <option value="0.95" selected>95%</option>
+              <option value="0.99">99%</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="validation" id="validation">Weights: <strong>100.0%</strong></div>
+        <button class="run-button" id="runSimulation">
+          <span>Run simulation</span>
+          <span>→</span>
+        </button>
+        <p class="error" id="error"></p>
+      </aside>
+
+      <section class="results">
+        <div class="panel-heading results-heading">
+          <div><span>02</span><h2>Risk dashboard</h2></div>
+          <span class="run-meta" id="runMeta">NO RUN YET</span>
+        </div>
+
+        <div class="metric-grid">
+          <article class="metric-card accent">
+            <span>95% VALUE AT RISK</span>
+            <strong id="varValue">—</strong>
+            <small>maximum expected loss at selected confidence</small>
+          </article>
+          <article class="metric-card">
+            <span>EXPECTED SHORTFALL</span>
+            <strong id="esValue">—</strong>
+            <small>average loss beyond the VaR threshold</small>
+          </article>
+          <article class="metric-card">
+            <span>MEDIAN FINAL VALUE</span>
+            <strong id="medianValue">—</strong>
+            <small>50th percentile of simulated outcomes</small>
+          </article>
+          <article class="metric-card">
+            <span>MEAN RETURN</span>
+            <strong id="meanReturn">—</strong>
+            <small>mean simulated portfolio return</small>
+          </article>
+        </div>
+
+        <div class="panel chart-panel">
+          <div class="chart-header">
+            <div>
+              <span class="chart-kicker">DISTRIBUTION</span>
+              <h3>Simulated final portfolio values</h3>
+            </div>
+            <div class="legend"><i></i> outcomes <i class="median"></i> median</div>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="distributionChart"></canvas>
+            <div class="empty-state" id="chartEmpty">
+              <span>◎</span>
+              <p>Run a simulation to populate the distribution.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-grid">
+          <div class="panel">
+            <div class="subhead"><span>OUTCOME RANGE</span><span>£</span></div>
+            <div class="range-row"><span>5th percentile</span><strong id="p5">—</strong></div>
+            <div class="range-row"><span>25th percentile</span><strong id="p25">—</strong></div>
+            <div class="range-row"><span>50th percentile</span><strong id="p50">—</strong></div>
+            <div class="range-row"><span>75th percentile</span><strong id="p75">—</strong></div>
+            <div class="range-row"><span>95th percentile</span><strong id="p95">—</strong></div>
+          </div>
+          <div class="panel">
+            <div class="subhead"><span>SIMULATION STATISTICS</span><span>VALUE</span></div>
+            <div class="range-row"><span>Standard deviation</span><strong id="stdValue">—</strong></div>
+            <div class="range-row"><span>Minimum</span><strong id="minValue">—</strong></div>
+            <div class="range-row"><span>Maximum</span><strong id="maxValue">—</strong></div>
+            <div class="range-row"><span>Skewness</span><strong id="skewness">—</strong></div>
+            <div class="range-row"><span>Kurtosis</span><strong id="kurtosis">—</strong></div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel methodology">
+      <div class="panel-heading"><span>03</span><h2>Model notes</h2></div>
+      <div class="notes-grid">
+        <p><strong>Historical data</strong><br>Prices are loaded from Yahoo Finance and aligned to a common daily frequency using forward filling.</p>
+        <p><strong>Return model</strong><br>Simple historical returns are converted to log returns for compounding.</p>
+        <p><strong>Correlation</strong><br>The historical covariance matrix is used to correlate simulated asset shocks. Near-singular matrices are repaired.</p>
+        <p><strong>Limitations</strong><br>V0.1 assumes correlated Gaussian returns. Fat tails, regime changes and bootstrap methods are not yet modelled.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>BLACK SWAN / V0.1.0</span>
+    <span>For research & educational use · Not financial advice</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

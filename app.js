@@ -5,7 +5,7 @@
   See README / backend source for the exact request and response shape.
 */
 
-const API_BASE = "http://127.0.0.1:5000";
+const API_BASE = "https://black-swan-16ce.onrender.com";
 
 const $ = id => document.getElementById(id);
 const money = value => Number.isFinite(Number(value))
